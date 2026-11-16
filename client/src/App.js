@@ -6,6 +6,14 @@ const ICE_CONFIG = { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] };
 
 const stopTracks = (stream) => stream?.getTracks().forEach((track) => track.stop());
 
+const withTimeout = (promise) =>
+  Promise.race([
+    promise,
+    new Promise((_, reject) =>
+      setTimeout(() => reject(new Error('Could not reach Firestore. Check .env, the database and the rules.')), 10000)
+    ),
+  ]);
+
 function App() {
   const pcRef = useRef();
   const stopSignalingRef = useRef(() => {});
@@ -49,7 +57,7 @@ function App() {
   const start = async (action) => {
     setInCall(true);
     try {
-      stopSignalingRef.current = await action();
+      stopSignalingRef.current = await withTimeout(action());
     } catch (error) {
       setInCall(false);
       alert(error.message);
